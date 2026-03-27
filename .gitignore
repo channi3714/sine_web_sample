@@ -1,0 +1,32 @@
+# ─── Java / Spring Boot ─────────────────────────────────────
+backend/build/
+backend/.gradle/
+backend/bin/
+backend/*.jar
+backend/HELP.md
+
+# ─── React / Node ────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+
+# ─── 환경변수 (절대 커밋 금지!) ──────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── IDE ─────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+
+# ─── OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Claude Code ─────────────────────────────────────────────
+.claude/
+
+# ─── Docker ──────────────────────────────────────────────────
+docker-compose.override.yml

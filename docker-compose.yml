@@ -1,0 +1,73 @@
+# 경로: sine-web/docker-compose.yml
+# 용도: 로컬 개발 환경 - MySQL + Backend + Frontend를 한 번에 실행
+
+version: '3.8'
+
+services:
+
+  # ─── MySQL 데이터베이스 ───────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: sine_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword   # root 계정 비밀번호 (로컬 전용)
+      MYSQL_DATABASE: sine_db             # 시작 시 자동 생성할 DB 이름
+      MYSQL_USER: sine_user               # 앱 전용 계정
+      MYSQL_PASSWORD: sine_password       # 앱 전용 계정 비밀번호
+    ports:
+      - "3306:3306"   # 로컬에서 DBeaver/MySQL Workbench로 직접 접속 가능
+    volumes:
+      - mysql_data:/var/lib/mysql         # 데이터 영구 보존 (재시작해도 데이터 유지)
+    healthcheck:
+      # DB가 실제로 쿼리를 받을 수 있는 상태인지 확인
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "sine_user", "-psine_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sine_network
+
+  # ─── Spring Boot 백엔드 ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend                  # backend/Dockerfile 기준으로 이미지 빌드
+    container_name: sine_backend
+    restart: always
+    ports:
+      - "8080:8080"   # 개발 중에는 직접 접근 가능 (배포 시 Nginx 뒤로 숨김)
+    environment:
+      # 환경변수로 DB 접속 정보 주입 → 코드에 비밀번호 하드코딩 방지!
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/sine_db?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: sine_user
+      SPRING_DATASOURCE_PASSWORD: sine_password
+      JWT_SECRET: local-dev-jwt-secret-key-change-in-production
+    depends_on:
+      db:
+        condition: service_healthy        # DB healthcheck 통과 후에만 백엔드 시작
+    networks:
+      - sine_network
+
+  # ─── React 프론트엔드 ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sine_frontend
+    restart: always
+    ports:
+      - "3000:80"     # 브라우저에서 http://localhost:3000 으로 접속
+    depends_on:
+      - backend
+    networks:
+      - sine_network
+
+# ─── 볼륨 (데이터 영구 저장소) ──────────────────────────────
+volumes:
+  mysql_data:
+
+# ─── 네트워크 ────────────────────────────────────────────────
+# 같은 네트워크 안의 컨테이너끼리는 서비스 이름으로 통신 가능
+# 예: 백엔드에서 "db:3306" 으로 MySQL에 접속
+networks:
+  sine_network:
+    driver: bridge

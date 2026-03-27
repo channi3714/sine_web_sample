@@ -1,0 +1,36 @@
+# 경로: backend/src/main/resources/application.yml
+
+spring:
+  datasource:
+    # 환경변수에서 DB 연결 정보를 읽음 (docker-compose에서 주입)
+    # 환경변수가 없으면 로컬 기본값 사용
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/sine_db?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8}
+    username: ${SPRING_DATASOURCE_USERNAME:sine_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:sine_password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    # 앱 시작 시 엔티티 기반으로 테이블 자동 생성/수정
+    # 개발 중에는 update, 운영에서는 validate로 변경할 것
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        # 실행되는 SQL을 콘솔에 출력 (디버깅용)
+        show_sql: true
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  # 응답 JSON에서 null 필드 제외
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+
+# JWT 설정 (환경변수로 관리)
+jwt:
+  # 실제 운영에서는 환경변수로 교체할 것 (절대 코드에 하드코딩 금지)
+  secret: ${JWT_SECRET:sine-secret-key-for-development-only-change-in-production-must-be-long}
+  # 토큰 유효 시간: 24시간 (밀리초 단위)
+  expiration: 86400000
