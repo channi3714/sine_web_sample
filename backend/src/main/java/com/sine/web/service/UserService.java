@@ -7,6 +7,7 @@ import com.sine.web.domain.User;
 import com.sine.web.dto.AuthResponse;
 import com.sine.web.dto.LoginRequest;
 import com.sine.web.dto.RegisterRequest;
+import com.sine.web.dto.UpdateProfileRequest;
 import com.sine.web.dto.UserResponse;
 import com.sine.web.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -91,6 +92,18 @@ public class UserService {
     public UserResponse getMyProfile(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        return UserResponse.from(user);
+    }
+
+    @Transactional
+    public UserResponse updateProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        user.updateProfile(request.username(), request.bio());
+
+        // @Transactional 덕분에 save() 호출 없이도 변경사항이 자동으로 DB에 반영됨
+        // (JPA 더티 체킹: 트랜잭션 종료 시 변경된 엔티티를 감지해서 UPDATE 쿼리 실행)
         return UserResponse.from(user);
     }
 }
