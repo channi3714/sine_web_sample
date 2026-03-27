@@ -6,10 +6,10 @@ import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
 interface UserProfile {
-  id: number
   email: string
   username: string
   bio: string | null
+  birthday: string | null   // "YYYY-MM-DD" 형식
   createdAt: string
   updatedAt: string | null
 }
@@ -22,32 +22,25 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // 편집 모드 상태
   const [isEditing, setIsEditing] = useState(false)
   const [editUsername, setEditUsername] = useState('')
   const [editBio, setEditBio] = useState('')
+  const [editBirthday, setEditBirthday] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/users/me')
-        setProfile(response.data)
-      } catch {
-        setError('프로필을 불러오는 데 실패했습니다.')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchProfile()
+    api.get('/users/me')
+      .then(res => setProfile(res.data))
+      .catch(() => setError('프로필을 불러오는 데 실패했습니다.'))
+      .finally(() => setIsLoading(false))
   }, [])
 
-  // 편집 시작: 현재 값을 편집 폼에 미리 채워둠
   const handleEditStart = () => {
     if (!profile) return
     setEditUsername(profile.username)
     setEditBio(profile.bio ?? '')
+    setEditBirthday(profile.birthday ?? '')
     setSaveError('')
     setIsEditing(true)
   }
@@ -57,7 +50,6 @@ export default function ProfilePage() {
     setSaveError('')
   }
 
-  // PUT /api/users/me 로 프로필 저장
   const handleSave = async () => {
     if (!editUsername.trim()) {
       setSaveError('사용자명은 필수입니다.')
@@ -69,6 +61,7 @@ export default function ProfilePage() {
       const response = await api.put('/users/me', {
         username: editUsername,
         bio: editBio || null,
+        birthday: editBirthday || null,
       })
       setProfile(response.data)
       setIsEditing(false)
@@ -84,12 +77,32 @@ export default function ProfilePage() {
     navigate('/login')
   }
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString('ko-KR', {
+  // 날짜 포맷 헬퍼
+  const formatDateTime = (str: string | null) => {
+    if (!str) return '-'
+    return new Date(str).toLocaleDateString('ko-KR', {
       year: 'numeric', month: 'long', day: 'numeric',
       hour: '2-digit', minute: '2-digit',
     })
+  }
+
+  const formatDate = (str: string | null) => {
+    if (!str) return '-'
+    const [y, m, d] = str.split('-')
+    return `${y}년 ${m}월 ${d}일`
+  }
+
+  // 나이 계산
+  const calcAge = (birthday: string | null) => {
+    if (!birthday) return null
+    const today = new Date()
+    const birth = new Date(birthday)
+    let age = today.getFullYear() - birth.getFullYear()
+    const hasHadBirthday =
+      today.getMonth() > birth.getMonth() ||
+      (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate())
+    if (!hasHadBirthday) age--
+    return age
   }
 
   if (isLoading) {
@@ -142,15 +155,22 @@ export default function ProfilePage() {
 
               {/* 상세 정보 */}
               <div className="px-6 py-4 space-y-1">
-                <InfoRow label="사용자 ID" value={`#${profile.id}`} />
                 <InfoRow label="이메일" value={profile.email} />
                 <InfoRow label="사용자명" value={profile.username} />
+                <InfoRow
+                  label="생년월일"
+                  value={
+                    profile.birthday
+                      ? `${formatDate(profile.birthday)}${calcAge(profile.birthday) !== null ? ` (만 ${calcAge(profile.birthday)}세)` : ''}`
+                      : '미입력'
+                  }
+                  muted={!profile.birthday}
+                />
                 <InfoRow label="자기소개" value={profile.bio ?? '미작성'} muted={!profile.bio} />
-                <InfoRow label="가입일" value={formatDate(profile.createdAt)} />
-                <InfoRow label="최근 수정" value={formatDate(profile.updatedAt)} />
+                <InfoRow label="가입일" value={formatDateTime(profile.createdAt)} />
+                <InfoRow label="최근 수정" value={formatDateTime(profile.updatedAt)} />
               </div>
 
-              {/* 편집 버튼 (뷰 모드일 때만) */}
               {!isEditing && (
                 <div className="px-6 pb-6">
                   <button
@@ -163,7 +183,7 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* 편집 폼 (편집 모드일 때만) */}
+            {/* 편집 폼 */}
             {isEditing && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
                 <h3 className="font-semibold text-gray-900">프로필 수정</h3>
@@ -174,6 +194,7 @@ export default function ProfilePage() {
                   </div>
                 )}
 
+                {/* 사용자명 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     사용자명 <span className="text-red-500">*</span>
@@ -189,6 +210,27 @@ export default function ProfilePage() {
                   <p className="mt-1 text-xs text-gray-400 text-right">{editUsername.length}/20</p>
                 </div>
 
+                {/* 생년월일 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    생년월일
+                  </label>
+                  <input
+                    type="date"
+                    value={editBirthday}
+                    onChange={(e) => setEditBirthday(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}  // 오늘 이후 날짜 선택 불가
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  />
+                  {editBirthday && (
+                    <p className="mt-1 text-xs text-gray-400">
+                      만 {calcAge(editBirthday)}세
+                    </p>
+                  )}
+                </div>
+
+                {/* 자기소개 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     자기소개

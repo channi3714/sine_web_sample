@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -33,6 +34,10 @@ public class User {
     @Column(length = 200)
     private String bio;
 
+    // 생년월일 (선택 입력) - LocalDate: 날짜만 (시간 없음)
+    @Column
+    private LocalDate birthday;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -57,8 +62,9 @@ public class User {
     }
 
     // 프로필 수정 메서드 - 엔티티 내부에서만 필드 변경 가능하도록
-    public void updateProfile(String username, String bio) {
+    public void updateProfile(String username, String bio, LocalDate birthday) {
         this.username = username;
         this.bio = bio;
+        this.birthday = birthday;
     }
 }
