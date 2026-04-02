@@ -27,25 +27,20 @@ Domain : channi-web-sample.shop (Gabia)
 
 ## 전체 아키텍처
 
-```
 사용자 브라우저
-      │
-      ▼
+
 [도메인] channi-web-sample.shop
-      │
-      ▼
+     
 [AWS EC2] 3.38.57.160
-      │
-      ▼
+     
 [Nginx] — Reverse Proxy (포트 80/443)
-      │
-      ├──▶ /api/*  →  sine_backend (Spring Boot, 포트 8080)
-      │                     │
-      │                     ▼
-      │              sine_db (MySQL 8.0, 포트 3306)
-      │
-      └──▶ /*      →  sine_frontend (React, 포트 3000)
-```
+     
+/api/*  →  sine_backend (Spring Boot, 포트 8080)
+      
+sine_db (MySQL 8.0, 포트 3306)
+
+sine_frontend (React, 포트 3000)
+
 
 외부에서 8080, 3000, 3306 포트는 직접 접근 불가. 모든 트래픽은 Nginx를 통해서만 유입
 
