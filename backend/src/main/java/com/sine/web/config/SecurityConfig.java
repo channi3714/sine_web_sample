@@ -108,8 +108,10 @@ public class SecurityConfig {
         // 허용할 출처 (개발 환경)
         // 운영 환경에서는 실제 도메인으로 변경할 것
         config.setAllowedOrigins(List.of(
-                "http://localhost:3000",   // React 개발 서버
-                "http://localhost:5173"    // Vite 기본 포트
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "https://channi-web-sample.shop",
+                "https://www.channi-web-sample.shop"
         ));
 
         // 허용할 HTTP 메서드
